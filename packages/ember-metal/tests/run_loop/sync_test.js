@@ -1,4 +1,4 @@
-module('system/run_loop/schedule_test');
+module('system/run_loop/sync_test');
 
 test('sync() will immediately flush the sync queue only', function() {
   var cnt = 0;
@@ -22,4 +22,10 @@ test('sync() will immediately flush the sync queue only', function() {
 
   equal(cnt, 10, 'should flush actions now too');
 
+});
+
+test('calling sync() outside a run loop does not cause an error', function() {
+  expect(0);
+
+  Ember.run.sync();
 });

@@ -13,7 +13,7 @@ module("Ember.View - Template Functionality", {
 });
 
 test("should call the function of the associated template", function() {
-  container.register('template', 'testTemplate', function() {
+  container.register('template:testTemplate', function() {
     return "<h1 id='twas-called'>template was called</h1>";
   });
 
@@ -22,7 +22,7 @@ test("should call the function of the associated template", function() {
     templateName: 'testTemplate'
   });
 
-  Ember.run(function(){
+  Ember.run(function() {
     view.createElement();
   });
 
@@ -30,7 +30,7 @@ test("should call the function of the associated template", function() {
 });
 
 test("should call the function of the associated template with itself as the context", function() {
-  container.register('template', 'testTemplate', function(dataSource) {
+  container.register('template:testTemplate', function(dataSource) {
     return "<h1 id='twas-called'>template was called for " + get(dataSource, 'personName') + "</h1>";
   });
 
@@ -43,7 +43,7 @@ test("should call the function of the associated template with itself as the con
     }
   });
 
-  Ember.run(function(){
+  Ember.run(function() {
     view.createElement();
   });
 
@@ -63,7 +63,7 @@ test("should fall back to defaultTemplate if neither template nor templateName a
     }
   });
 
-  Ember.run(function(){
+  Ember.run(function() {
     view.createElement();
   });
 
@@ -79,7 +79,7 @@ test("should not use defaultTemplate if template is provided", function() {
   });
 
   view = View.create();
-  Ember.run(function(){
+  Ember.run(function() {
     view.createElement();
   });
 
@@ -89,7 +89,7 @@ test("should not use defaultTemplate if template is provided", function() {
 test("should not use defaultTemplate if template is provided", function() {
   var View;
 
-  container.register('template', 'foobar', function() { return 'foo'; });
+  container.register('template:foobar', function() { return 'foo'; });
 
   View = Ember.View.extend({
     container: container,
@@ -98,7 +98,7 @@ test("should not use defaultTemplate if template is provided", function() {
   });
 
   view = View.create();
-  Ember.run(function(){
+  Ember.run(function() {
     view.createElement();
   });
 
@@ -107,7 +107,7 @@ test("should not use defaultTemplate if template is provided", function() {
 
 test("should render an empty element if no template is specified", function() {
   view = Ember.View.create();
-  Ember.run(function(){
+  Ember.run(function() {
     view.createElement();
   });
 
@@ -146,7 +146,7 @@ test("should provide a controller to the template if a controller is specified o
 
   strictEqual(optionsDataKeywordsControllerForView, controller1, "passes the controller in the data");
 
-  Ember.run(function(){
+  Ember.run(function() {
     view.destroy();
   });
 
@@ -173,7 +173,7 @@ test("should provide a controller to the template if a controller is specified o
   strictEqual(optionsDataKeywordsControllerForView, controller1, "passes the controller in the data");
   strictEqual(optionsDataKeywordsControllerForChildView, controller2, "passes the child view's controller in the data");
 
-  Ember.run(function(){
+  Ember.run(function() {
     parentView.destroy();
   });
 

@@ -29,7 +29,7 @@ module("the #each helper", {
   },
 
   teardown: function() {
-    Ember.run(function(){
+    Ember.run(function() {
       view.destroy();
       view = null;
     });
@@ -213,7 +213,7 @@ test("it supports itemController", function() {
     controller: parentController
   });
 
-  container.register('controller', 'person', Controller);
+  container.register('controller:person', Controller);
 
   append(view);
 
@@ -241,6 +241,35 @@ test("it supports itemController", function() {
   strictEqual(view.get('_childViews')[0].get('_arrayController.target'), parentController, "the target property of the child controllers are set correctly");
 });
 
+test("itemController gets a parentController property", function() {
+  // using an ObjectController for this test to verify that parentController does accidentally get set
+  // on the proxied model.
+  var Controller = Ember.ObjectController.extend({
+        controllerName: Ember.computed(function() {
+          return "controller:"+this.get('content.name') + ' of ' + this.get('parentController.company');
+        })
+      }),
+      container = new Ember.Container(),
+      parentController = {
+        container: container,
+        company: 'Yapp'
+      };
+
+  Ember.run(function() { view.destroy(); }); // destroy existing view
+
+  view = Ember.View.create({
+    template: templateFor('{{#each view.people itemController="person"}}{{controllerName}}{{/each}}'),
+    people: people,
+    controller: parentController
+  });
+
+  container.register('controller:person', Controller);
+
+  append(view);
+
+  equal(view.$().text(), "controller:Steve Holt of Yappcontroller:Annabelle of Yapp");
+});
+
 test("it supports itemController when using a custom keyword", function() {
   var Controller = Ember.Controller.extend({
     controllerName: Ember.computed(function() {
@@ -259,7 +288,7 @@ test("it supports itemController when using a custom keyword", function() {
     }
   });
 
-  container.register('controller', 'person', Controller);
+  container.register('controller:person', Controller);
 
   append(view);
 
@@ -272,6 +301,29 @@ test("it supports itemController when using a custom keyword", function() {
   equal(view.$().text(), "controller:Steve Holtcontroller:Annabelle");
 });
 
+test("it supports {{itemView=}}", function() {
+  var container = new Ember.Container();
+
+  var itemView = Ember.View.extend({
+    template: templateFor('itemView:{{name}}')
+  });
+
+  Ember.run(function() { view.destroy(); }); // destroy existing view
+  view = Ember.View.create({
+    template: templateFor('{{each view.people itemView="AnItemView"}}'),
+    people: people,
+    controller: {
+      container: container
+    }
+  });
+
+  container.register('view:anItemView', itemView);
+
+  append(view);
+
+  assertText(view, "itemView:Steve HoltitemView:Annabelle");
+});
+
 test("it supports {{itemViewClass=}}", function() {
   Ember.run(function() { view.destroy(); }); // destroy existing view
   view = Ember.View.create({
@@ -282,28 +334,32 @@ test("it supports {{itemViewClass=}}", function() {
   append(view);
 
   assertText(view, "Steve HoltAnnabelle");
-
 });
 
 test("it supports {{itemViewClass=}} with tagName", function() {
-  Ember.run(function() { view.destroy(); }); // destroy existing view
-  view = Ember.View.create({
-      template: templateFor('{{each view.people itemViewClass="MyView" tagName="ul"}}'),
-      people: people
-  });
+  Ember.TESTING_DEPRECATION = true;
 
-  append(view);
+  try {
+    Ember.run(function() { view.destroy(); }); // destroy existing view
+    view = Ember.View.create({
+        template: templateFor('{{each view.people itemViewClass="MyView" tagName="ul"}}'),
+        people: people
+    });
 
-  var html = view.$().html();
+    append(view);
 
-  // IE 8 (and prior?) adds the \r\n
-  html = html.replace(/<script[^>]*><\/script>/ig, '').replace(/[\r\n]/g, '');
-  html = html.replace(/<div[^>]*><\/div>/ig, '').replace(/[\r\n]/g, '');
-  html = html.replace(/<li[^>]*/ig, '<li');
+    var html = view.$().html();
 
-  // Use lowercase since IE 8 make tagnames uppercase
-  equal(html.toLowerCase(), "<ul><li>steve holt</li><li>annabelle</li></ul>");
+    // IE 8 (and prior?) adds the \r\n
+    html = html.replace(/<script[^>]*><\/script>/ig, '').replace(/[\r\n]/g, '');
+    html = html.replace(/<div[^>]*><\/div>/ig, '').replace(/[\r\n]/g, '');
+    html = html.replace(/<li[^>]*/ig, '<li');
 
+    // Use lowercase since IE 8 make tagnames uppercase
+    equal(html.toLowerCase(), "<ul><li>steve holt</li><li>annabelle</li></ul>");
+  } finally {
+    Ember.TESTING_DEPRECATION = false;
+  }
 });
 
 test("it supports {{itemViewClass=}} with in format", function() {
@@ -335,18 +391,11 @@ test("it supports {{else}}", function() {
 
   assertHTML(view, "onetwo");
 
-  stop();
-
-  // We really need to make sure we get to the re-render
-  Ember.run.next(function() {
-    Ember.run(function() {
-      view.set('items', Ember.A([]));
-    });
-
-    start();
-
-    assertHTML(view, "Nothing");
+  Ember.run(function() {
+    view.set('items', Ember.A());
   });
+
+  assertHTML(view, "Nothing");
 });
 
 test("it works with the controller keyword", function() {
@@ -429,17 +478,6 @@ test("#each accepts 'this' as the right hand side", function() {
 
   equal(view.$().text(), "My Cool Each Test 1My Cool Each Test 2");
 });
-test("#each accepts 'this' as the right hand side", function() {
-  view = Ember.View.create({
-    template: templateFor("{{#each item in this}}{{view.title}} {{item.name}}{{/each}}"),
-    title: "My Cool Each Test",
-    controller: Ember.A([{ name: 1 }, { name: 2 }])
-  });
-
-  append(view);
-
-  equal(view.$().text(), "My Cool Each Test 1My Cool Each Test 2");
-});
 
 test("views inside #each preserve the new context", function() {
   var controller = Ember.A([ { name: "Adam" }, { name: "Steve" } ]);
@@ -461,10 +499,33 @@ test("controller is assignable inside an #each", function() {
 
   view = Ember.View.create({
     controller: controller,
-    template: templateFor('{{#each itemController in this}}{{#view controllerBinding="itemController"}}{{name}}{{/view}}{{/each}}')
+    template: templateFor('{{#each personController in this}}{{#view controllerBinding="personController"}}{{name}}{{/view}}{{/each}}')
   });
 
   append(view);
 
   equal(view.$().text(), "AdamSteve");
 });
+
+test("single-arg each defaults to current context", function() {
+  view = Ember.View.create({
+    context: Ember.A([ { name: "Adam" }, { name: "Steve" } ]),
+    template: templateFor('{{#each}}{{name}}{{/each}}')
+  });
+
+  append(view);
+
+  equal(view.$().text(), "AdamSteve");
+});
+
+test("single-arg each will iterate over controller if present", function() {
+  view = Ember.View.create({
+    controller: Ember.A([ { name: "Adam" }, { name: "Steve" } ]),
+    template: templateFor('{{#each}}{{name}}{{/each}}')
+  });
+
+  append(view);
+
+  equal(view.$().text(), "AdamSteve");
+});
+

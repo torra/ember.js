@@ -48,6 +48,15 @@ test("A registered factory returns the same instance each time", function() {
   equal(postController, container.lookup('controller:post'));
 });
 
+test("A registered factory is returned from lookupFactory", function() {
+  var container = new Container();
+  var PostController = factory();
+
+  container.register('controller:post', PostController);
+
+  equal(container.lookupFactory('controller:post'), PostController, "The factory is returned from lookupFactory");
+});
+
 test("A registered factory returns a fresh instance if singleton: false is passed as an option", function() {
   var container = new Container();
   var PostController = factory();
@@ -78,6 +87,29 @@ test("A registered factory returns true for `has` if an item is registered", fun
 
   equal(container.has('controller:post'), true, "The `has` method returned true for registered factories");
   equal(container.has('controller:posts'), false, "The `has` method returned false for unregistered factories");
+});
+
+test("A Registered factory can be unregistered, and all cached instances are removed", function() {
+  var container = new Container();
+  var PostController = factory();
+
+  container.register('controller:post', PostController);
+
+  equal(container.has('controller:post'), true, "container is aware of the PostController");
+
+  ok(container.lookup("controller:post") instanceof PostController, 'lookup is correct instance');
+
+  container.unregister("controller:post");
+
+  equal(container.has('controller:post'), false, "container is no-longer aware of the PostController");
+  equal(container.lookup("controller:post"), undefined, 'lookup no longer returns a controller');
+
+  // re-registration continues to work
+  container.register('controller:post', PostController);
+
+  equal(container.has('controller:post'), true, "container is aware of the PostController");
+
+  ok(container.lookup("controller:post") instanceof PostController, 'lookup is correct instance');
 });
 
 test("A container lookup has access to the container", function() {
@@ -172,6 +204,19 @@ test("A failed lookup returns undefined", function() {
   var container = new Container();
 
   equal(container.lookup("doesnot:exist"), undefined);
+});
+
+test("Injecting a failed lookup raises an error", function() {
+  var container = new Container();
+  var Foo = { create: function() { }};
+
+  container.register('model:foo', Foo);
+
+  container.injection('model:foo', 'store', 'store:main');
+
+  throws(function() {
+    container.lookup('model:foo');
+  });
 });
 
 test("Destroying the container destroys any cached singletons", function() {

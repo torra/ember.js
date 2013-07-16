@@ -156,9 +156,9 @@ test("raise if the provided object is null", function() {
 */
 
 test("raise if the provided object is undefined", function() {
-  raises(function() {
+  expectAssertion(function() {
     Ember.get(undefined, 'key');
-  });
+  }, /Cannot call get with 'key' on an undefined object/i);
 });
 
 test("should work when object is Ember (used in Ember.get)", function() {
@@ -556,7 +556,7 @@ test("nested dependent keys should propagate after they update", function() {
 
       price: Ember.computed(function() {
         return this.get('restaurant.menu.price');
-      }).property('restaurant.menu.price').volatile()
+      }).property('restaurant.menu.price')
     });
 
     bindObj = ObservableObject.createWithMixins({
@@ -586,7 +586,7 @@ test("cacheable nested dependent keys should clear after their dependencies upda
 
   var DepObj;
 
-  Ember.run(function(){
+  Ember.run(function() {
     lookup.DepObj = DepObj = ObservableObject.createWithMixins({
       restaurant: ObservableObject.create({
         menu: ObservableObject.create({
@@ -602,18 +602,18 @@ test("cacheable nested dependent keys should clear after their dependencies upda
 
   equal(DepObj.get('price'), 5, "precond - computed property is correct");
 
-  Ember.run(function(){
+  Ember.run(function() {
     DepObj.set('restaurant.menu.price', 10);
   });
   equal(DepObj.get('price'), 10, "cacheable computed properties are invalidated even if no run loop occurred");
 
-  Ember.run(function(){
+  Ember.run(function() {
     DepObj.set('restaurant.menu.price', 20);
   });
   equal(DepObj.get('price'), 20, "cacheable computed properties are invalidated after a second get before a run loop");
   equal(DepObj.get('price'), 20, "precond - computed properties remain correct after a run loop");
 
-  Ember.run(function(){
+  Ember.run(function() {
     DepObj.set('restaurant.menu', ObservableObject.create({
       price: 15
     }));
@@ -622,7 +622,7 @@ test("cacheable nested dependent keys should clear after their dependencies upda
 
   equal(DepObj.get('price'), 15, "cacheable computed properties are invalidated after a middle property changes");
 
-  Ember.run(function(){
+  Ember.run(function() {
     DepObj.set('restaurant.menu', ObservableObject.create({
       price: 25
     }));
@@ -659,15 +659,15 @@ module("Observable objects & object properties ", {
         return ret ;
       },
 
-      newObserver:function(){
+      newObserver:function() {
         this.abnormal = 'changedValueObserved';
       },
 
-      testObserver: Ember.observer(function(){
+      testObserver: Ember.observer(function() {
         this.abnormal = 'removedObserver';
       }, 'normal'),
 
-      testArrayObserver: Ember.observer(function(){
+      testArrayObserver: Ember.observer(function() {
         this.abnormal = 'notifiedObserver';
       }, 'normalArray.[]')
 
@@ -676,7 +676,7 @@ module("Observable objects & object properties ", {
 
 });
 
-test('incrementProperty and decrementProperty',function(){
+test('incrementProperty and decrementProperty',function() {
   var newValue = object.incrementProperty('numberVal');
   equal(25,newValue,'numerical value incremented');
   object.numberVal = 24;
@@ -686,17 +686,29 @@ test('incrementProperty and decrementProperty',function(){
   newValue = object.incrementProperty('numberVal', 5);
   equal(30,newValue,'numerical value incremented by specified increment');
   object.numberVal = 25;
+  newValue = object.incrementProperty('numberVal', -5);
+  equal(20,newValue,'minus numerical value incremented by specified increment');
+  object.numberVal = 25;
+  newValue = object.incrementProperty('numberVal', 0);
+  equal(25,newValue,'zero numerical value incremented by specified increment');
+  object.numberVal = 25;
   newValue = object.decrementProperty('numberVal',5);
   equal(20,newValue,'numerical value decremented by specified increment');
+  object.numberVal = 25;
+  newValue = object.decrementProperty('numberVal', -5);
+  equal(30,newValue,'minus numerical value decremented by specified increment');
+  object.numberVal = 25;
+  newValue = object.decrementProperty('numberVal', 0);
+  equal(25,newValue,'zero numerical value decremented by specified increment');
 });
 
-test('toggle function, should be boolean',function(){
+test('toggle function, should be boolean',function() {
   equal(object.toggleProperty('toggleVal',true,false),object.get('toggleVal'));
   equal(object.toggleProperty('toggleVal',true,false),object.get('toggleVal'));
   equal(object.toggleProperty('toggleVal',undefined,undefined),object.get('toggleVal'));
 });
 
-test('should notify array observer when array changes',function(){
+test('should notify array observer when array changes',function() {
   get(object, 'normalArray').replace(0,0,6);
   equal(object.abnormal, 'notifiedObserver', 'observer should be notified');
 });
@@ -723,7 +735,7 @@ module("object.addObserver()", {
         this.incrementor= this.incrementor+1;
       },
 
-      chainedObserver:function(){
+      chainedObserver:function() {
         this.normal2 = 'chainedPropertyObserved' ;
       }
 
@@ -765,7 +777,7 @@ module("object.removeObserver()", {
       removeAction: function() {
         this.normal2 = 'newDependentValue';
       },
-      removeChainedObserver:function(){
+      removeChainedObserver:function() {
         this.normal2 = 'chainedPropertyObserved' ;
       },
 
@@ -855,12 +867,12 @@ module("Bind function ", {
 
 test("should bind property with method parameter as undefined", function() {
   // creating binding
-  Ember.run(function(){
+  Ember.run(function() {
     objectA.bind("name", "Namespace.objectB.normal",undefined) ;
   });
 
   // now make a change to see if the binding triggers.
-  Ember.run(function(){
+  Ember.run(function() {
     objectB.set("normal", "changedValue") ;
   });
 

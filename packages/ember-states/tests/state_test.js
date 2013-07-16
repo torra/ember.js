@@ -181,24 +181,45 @@ test("the isLeaf property is false when a state has child states", function() {
   equal(definitelyInside.get('isLeaf'), true);
 });
 
+test("propagates its container to its child states", function() {
+  var container = { lookup: Ember.K },
+      manager = Ember.StateManager.create({
+        container: container,
+        states: {
+          first: Ember.State.extend({
+            insideFirst: Ember.State.extend()
+          }),
+          second: Ember.State.create()
+        }
+      });
+
+  var first = manager.get('states.first'),
+      insideFirst = first.get('states.insideFirst'),
+      second = manager.get('states.second');
+
+  equal(first.container, container, 'container should be given to a `create`ed child state');
+  equal(insideFirst.container, container, 'container should be given to a nested child state');
+  equal(second.container, container, 'container should be given to a `extend`ed child state after creation');
+});
+
 module("Ember.State.transitionTo", {
-  setup: function(){
+  setup: function() {
     _$ = Ember.$;
     Ember.$ = {};
-    Ember.$.Event = function(){};
+    Ember.$.Event = function() {};
   },
-  teardown: function(){
+  teardown: function() {
     Ember.$ = _$;
   }
 });
-test("sets the transition target", function(){
+test("sets the transition target", function() {
   var receivedTarget,
       receivedContext,
       stateManager,
       transitionFunction;
 
   stateManager = {
-    transitionTo: function(target, context){
+    transitionTo: function(target, context) {
       receivedTarget = target;
       receivedContext = context;
     }
@@ -212,7 +233,7 @@ test("sets the transition target", function(){
   ok(!receivedContext, "does not pass a context when given an event without context");
 });
 
-test("passes no context arguments when there are no contexts", function(){
+test("passes no context arguments when there are no contexts", function() {
   var contextArgsCount,
       stateManager,
       transitionFunction,
@@ -222,7 +243,7 @@ test("passes no context arguments when there are no contexts", function(){
   event.contexts = [];
 
   stateManager = {
-    transitionTo: function(){
+    transitionTo: function() {
       contextArgsCount = [].slice.call(arguments, 1).length;
     }
   };
@@ -234,7 +255,7 @@ test("passes no context arguments when there are no contexts", function(){
   equal( contextArgsCount, 0);
 });
 
-test("passes through a single context", function(){
+test("passes through a single context", function() {
   var receivedContext,
       stateManager,
       transitionFunction,
@@ -244,7 +265,7 @@ test("passes through a single context", function(){
   event.contexts = [{ value: 'context value' }];
 
   stateManager = {
-    transitionTo: function(target, context){
+    transitionTo: function(target, context) {
       receivedContext = context;
     }
   };
@@ -256,7 +277,7 @@ test("passes through a single context", function(){
   equal( receivedContext, event.contexts[0]);
 });
 
-test("passes through multiple contexts as additional arguments", function(){
+test("passes through multiple contexts as additional arguments", function() {
   var receivedContexts,
       stateManager,
       transitionFunction,
@@ -266,7 +287,7 @@ test("passes through multiple contexts as additional arguments", function(){
   event.contexts = [ { value: 'context1' }, { value: 'context2' } ];
 
   stateManager = {
-    transitionTo: function(target){
+    transitionTo: function(target) {
       receivedContexts = [].slice.call(arguments, 1);
     }
   };
@@ -278,7 +299,7 @@ test("passes through multiple contexts as additional arguments", function(){
   deepEqual( receivedContexts, event.contexts);
 });
 
-test("does not mutate the event contexts value", function(){
+test("does not mutate the event contexts value", function() {
   var receivedContexts,
       stateManager,
       transitionFunction,
@@ -291,7 +312,7 @@ test("does not mutate the event contexts value", function(){
   event.contexts = originalContext.slice();
 
   stateManager = {
-    transitionTo: function(target){
+    transitionTo: function(target) {
       receivedContexts = [].slice.call(arguments, 1);
     }
   };
@@ -303,13 +324,13 @@ test("does not mutate the event contexts value", function(){
   deepEqual(event.contexts, originalContext);
 });
 
-test("passes no context arguments when called with no context or event", function(){
+test("passes no context arguments when called with no context or event", function() {
   var receivedContexts,
       stateManager,
       transitionFunction;
 
   stateManager = {
-    transitionTo: function(target){
+    transitionTo: function(target) {
       receivedContexts = [].slice.call(arguments, 1);
     }
   };
@@ -321,7 +342,7 @@ test("passes no context arguments when called with no context or event", functio
   equal( receivedContexts.length, 0, "transitionTo receives no context");
 });
 
-test("handles contexts without an event", function(){
+test("handles contexts without an event", function() {
   var receivedContexts,
       stateManager,
       transitionFunction,
@@ -332,7 +353,7 @@ test("handles contexts without an event", function(){
   context2 = { value: 'context2', contexts: ''};
 
   stateManager = {
-    transitionTo: function(target){
+    transitionTo: function(target) {
       receivedContexts = [].slice.call(arguments, 1);
     }
   };

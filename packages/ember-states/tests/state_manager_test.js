@@ -135,7 +135,7 @@ test("it does not enter an infinite loop in transitionTo", function() {
   stateManager.transitionTo('');
   ok(stateManager.get('currentState') === emptyState, "transitionTo does nothing when given empty name");
 
-  raises(function() {
+  expectAssertion(function() {
     stateManager.transitionTo('nonexistentState');
   }, 'Could not find state for path: "nonexistentState"');
 
@@ -288,12 +288,12 @@ test("it triggers setup on initialSubstate", function() {
 });
 
 test("it throws an assertion error when the initialState does not exist", function() {
-  raises(function() {
+  expectAssertion(function() {
     Ember.StateManager.create({
       initialState: 'foo',
       bar: Ember.State.create()
     });
-  }, Error, 'raises an exception');
+  });
 });
 
 module("Ember.StateManager - Transitions on Complex State Managers");
@@ -810,3 +810,41 @@ test("nothing happens if transitioning to a parent state when the current state 
   equal(stateManager.get('currentState.path'), 'start.first', 'does not change state');
 
 });
+
+test("StateManagers can use `create`d states from mixins", function() {
+  var statesMixin,
+    firstManagerClass, secondManagerClass,
+    firstManager, secondManager,
+    firstCount = 0, secondCount = 0;
+
+  statesMixin = Ember.Mixin.create({
+    initialState: 'ready',
+    ready: Ember.State.create({
+      startUpload: function(manager) {
+        manager.transitionTo('uploading');
+      }
+    })
+  });
+
+  firstManagerClass = Ember.StateManager.extend(statesMixin, {
+    uploading: Ember.State.create({
+      enter: function() { firstCount++; }
+    })
+  });
+
+  secondManagerClass = Ember.StateManager.extend(statesMixin, {
+    uploading: Ember.State.create({
+      enter: function() { secondCount++; }
+    })
+  });
+
+  firstManager  = firstManagerClass.create();
+  firstManager.send('startUpload');
+
+  secondManager = secondManagerClass.create();
+  secondManager.send('startUpload');
+
+  equal(firstCount, 1, "The first state manager's uploading state was entered once");
+  equal(secondCount, 1, "The second state manager's uploading state was entered once");
+});
+

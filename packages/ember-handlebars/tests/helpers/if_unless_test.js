@@ -8,7 +8,7 @@ var view;
 
 module("Handlebars {{#if}} and {{#unless}} helpers", {
   teardown: function() {
-    Ember.run(function(){
+    Ember.run(function() {
       if (view) {
         view.destroy();
       }
@@ -80,7 +80,7 @@ test("The `if` helper updates if an object proxy gains or loses context", functi
 
 test("The `if` helper updates if an array is empty or not", function() {
   view = Ember.View.create({
-    array: Ember.A([]),
+    array: Ember.A(),
 
     template: compile('{{#if view.array}}Yep{{/if}}')
   });

@@ -92,7 +92,6 @@ test("should by default target the state manager on the controller if it exists"
   view = Ember.View.create({
     controller: Ember.Controller.create({
       target: Ember.Object.create({
-        isState: true,
         send: function(context) {
           sent++;
         }
@@ -226,7 +225,7 @@ test("should unregister event handlers on rerender", function() {
 
   var previousActionId = view.$('a[data-ember-action]').attr('data-ember-action');
 
-  Ember.run(function(){
+  Ember.run(function() {
     view.rerender();
   });
 
@@ -291,7 +290,6 @@ test("should be compatible with sending events to a state manager", function() {
   var eventNameCalled,
       eventObjectSent,
       manager = {
-        isState: true,
         send: function(eventName, eventObject) { eventNameCalled = eventName; eventObjectSent = eventObject; }
       };
 
@@ -314,7 +312,7 @@ test("should allow 'send' as action name (#594)", function() {
 
   view = Ember.View.create({
     template: Ember.Handlebars.compile('<a href="#" {{action "send" }}>send</a>'),
-    send: function(evt){ eventHandlerWasCalled = true; eventObjectSent = evt; }
+    send: function(evt) { eventHandlerWasCalled = true; eventObjectSent = evt; }
   });
 
   appendView();
@@ -355,7 +353,7 @@ test("should send the view, event and current Handlebars context to the action",
   deepEqual(passedEvent.context, aContext, "the context is passed");
   equal(passedEvent.type, 'click', "the event passed is the event triggered for the action helper");
 
-  Ember.run(function(){ aTarget.destroy(); });
+  Ember.run(function() { aTarget.destroy(); });
 });
 
 test("should only trigger actions for the event they were registered on", function() {

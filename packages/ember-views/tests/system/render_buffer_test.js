@@ -12,7 +12,8 @@ test("RenderBuffers combine strings", function() {
   buffer.push('a');
   buffer.push('b');
 
-  equal("<div>ab</div>", buffer.string(), "Multiple pushes should concatenate");
+  // IE8 returns `element name as upper case with extra whitespace.
+  equal("<div>ab</div>", buffer.string().toLowerCase().replace(/\s+/g, ''), "Multiple pushes should concatenate");
 });
 
 test("value of 0 is included in output", function() {
@@ -85,6 +86,16 @@ test("handles null props - Issue #2019", function() {
   buffer.pushOpeningTag();
 
   equal('<span></span><div>', buffer.string());
+});
+
+test("handles browsers like Firefox < 11 that don't support outerHTML Issue #1952", function() {
+  var buffer = new Ember.RenderBuffer('div');
+  buffer.pushOpeningTag();
+  // Make sure element.outerHTML is falsy to trigger the fallback.
+  var elementStub = '<div></div>';
+  buffer.element = function() { return elementStub; };
+  // IE8 returns `element name as upper case with extra whitespace.
+  equal(elementStub, buffer.string().toLowerCase().replace(/\s/g, ''));
 });
 
 module("Ember.RenderBuffer - without tagName");

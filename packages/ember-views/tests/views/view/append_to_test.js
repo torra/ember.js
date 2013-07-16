@@ -8,13 +8,13 @@ module("Ember.View - append() and appendTo()", {
   },
 
   teardown: function() {
-    Ember.run(function(){
+    Ember.run(function() {
       if (!view.isDestroyed) { view.destroy(); }
     });
   }
 });
 
-test("should be added to the specified element when calling append()", function() {
+test("should be added to the specified element when calling appendTo()", function() {
   Ember.$("#qunit-fixture").html('<div id="menu"></div>');
 
   view = View.create();
@@ -29,7 +29,7 @@ test("should be added to the specified element when calling append()", function(
   ok(viewElem.length > 0, "creates and appends the view's element");
 });
 
-test("should be added to the document body when calling appendTo()", function() {
+test("should be added to the document body when calling append()", function() {
   view = View.create({
     render: function(buffer) {
       buffer.push("foo bar baz");
@@ -46,16 +46,16 @@ test("should be added to the document body when calling appendTo()", function() 
   ok(viewElem.length > 0, "creates and appends the view's element");
 });
 
-test("append calls willInsertElement and didInsertElement callbacks", function(){
+test("append calls willInsertElement and didInsertElement callbacks", function() {
   var willInsertElementCalled = false;
   var willInsertElementCalledInChild = false;
   var didInsertElementCalled = false;
 
   var ViewWithCallback = View.extend({
-    willInsertElement: function(){
+    willInsertElement: function() {
       willInsertElementCalled = true;
     },
-    didInsertElement: function(){
+    didInsertElement: function() {
       didInsertElementCalled = true;
     },
     render: function(buffer) {
@@ -100,7 +100,7 @@ test("remove removes an element from the DOM", function() {
   });
 
   ok(Ember.$("#" + get(view, 'elementId')).length === 0, "remove removes an element from the DOM");
-  ok(Ember.View.views[get(view, 'elementId')] === view, "remove does not remove the view from the view hash");
+  ok(Ember.View.views[get(view, 'elementId')] === undefined, "remove does not remove the view from the view hash");
   ok(!get(view, 'element'), "remove nulls out the element");
   equal(willDestroyCalled, 1, "the willDestroyElement hook was called once");
 });
@@ -144,7 +144,7 @@ module("Ember.View - append() and appendTo() in a view hierarchy", {
   },
 
   teardown: function() {
-    Ember.run(function(){
+    Ember.run(function() {
       if (!view.isDestroyed) { view.destroy(); }
     });
   }
@@ -197,7 +197,7 @@ module("Ember.View - removing views in a view hierarchy", {
   },
 
   teardown: function() {
-    Ember.run(function(){
+    Ember.run(function() {
       if (!view.isDestroyed) { view.destroy(); }
     });
   }
@@ -218,7 +218,7 @@ test("remove removes child elements from the DOM", function() {
   });
 
   ok(Ember.$("#" + get(childView, 'elementId')).length === 0, "remove removes child elements the DOM");
-  ok(Ember.View.views[get(childView, 'elementId')] === childView, "remove does not remove child views from the view hash");
+  ok(Ember.View.views[get(childView, 'elementId')] === undefined, "remove does not remove child views from the view hash");
   ok(!get(childView, 'element'), "remove nulls out child elements");
   equal(willDestroyCalled, 1, "the willDestroyElement hook was called once");
 });
