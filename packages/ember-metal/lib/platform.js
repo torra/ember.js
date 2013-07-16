@@ -24,6 +24,13 @@ var platform = Ember.platform = {};
 */
 Ember.create = Object.create;
 
+// IE8 has Object.create but it couldn't treat property descripters.
+if (Ember.create) {
+  if (Ember.create({a: 1}, {a: {value: 2}}).a !== 2) {
+    Ember.create = null;
+  }
+}
+
 // STUB_OBJECT_CREATE allows us to override other libraries that stub
 // Object.create different than we would prefer
 if (!Ember.create || Ember.ENV.STUB_OBJECT_CREATE) {
@@ -53,7 +60,7 @@ var canRedefineProperties, canDefinePropertyOnDOM;
 // Catch IE8 where Object.defineProperty exists but only works on DOM elements
 if (defineProperty) {
   try {
-    defineProperty({}, 'a',{get:function(){}});
+    defineProperty({}, 'a',{get:function() {}});
   } catch (e) {
     defineProperty = null;
   }
@@ -84,7 +91,7 @@ if (defineProperty) {
 
   // This is for Safari 5.0, which supports Object.defineProperty, but not
   // on DOM nodes.
-  canDefinePropertyOnDOM = (function(){
+  canDefinePropertyOnDOM = (function() {
     try {
       defineProperty(document.createElement('div'), 'definePropertyOnDOM', {});
       return true;
@@ -96,7 +103,7 @@ if (defineProperty) {
   if (!canRedefineProperties) {
     defineProperty = null;
   } else if (!canDefinePropertyOnDOM) {
-    defineProperty = function(obj, keyName, desc){
+    defineProperty = function(obj, keyName, desc) {
       var isNode;
 
       if (typeof Node === "object") {

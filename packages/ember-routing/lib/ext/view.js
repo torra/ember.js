@@ -12,6 +12,15 @@ Ember.View.reopen({
   },
 
   connectOutlet: function(outletName, view) {
+    if (this._pendingDisconnections) {
+      delete this._pendingDisconnections[outletName];
+    }
+
+    if (this._hasEquivalentView(outletName, view)) {
+      view.destroy();
+      return;
+    }
+
     var outlets = get(this, '_outlets'),
         container = get(this, 'container'),
         router = container && container.lookup('router:main'),
@@ -24,9 +33,29 @@ Ember.View.reopen({
     }
   },
 
-  disconnectOutlet: function(outletName) {
-    var outlets = get(this, '_outlets');
+  _hasEquivalentView: function(outletName, view) {
+    var existingView = get(this, '_outlets.'+outletName);
+    return existingView &&
+      existingView.constructor === view.constructor &&
+      existingView.get('template') === view.get('template') &&
+      existingView.get('context') === view.get('context');
+  },
 
-    set(outlets, outletName, null);
+  disconnectOutlet: function(outletName) {
+    if (!this._pendingDisconnections) {
+      this._pendingDisconnections = {};
+    }
+    this._pendingDisconnections[outletName] = true;
+    Ember.run.once(this, '_finishDisconnections');
+  },
+
+  _finishDisconnections: function() {
+    var outlets = get(this, '_outlets');
+    var pendingDisconnections = this._pendingDisconnections;
+    this._pendingDisconnections = null;
+
+    for (var outletName in pendingDisconnections) {
+      set(outlets, outletName, null);
+    }
   }
 });

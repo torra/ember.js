@@ -531,9 +531,9 @@ testBoth('depending on Global chain', function(get, set) {
 
 });
 
-testBoth('chained dependent keys should evaluate computed properties lazily', function(get,set){
+testBoth('chained dependent keys should evaluate computed properties lazily', function(get,set) {
   Ember.defineProperty(obj.foo.bar, 'b', Ember.computed(func));
-  Ember.defineProperty(obj.foo, 'c', Ember.computed(function(){}).property('bar.b'));
+  Ember.defineProperty(obj.foo, 'c', Ember.computed(function() {}).property('bar.b'));
   equal(count, 0, 'b should not run');
 });
 
@@ -675,6 +675,31 @@ testBoth("when setting a value on a computed property that doesn't handle sets",
   ok(observerFired, 'The observer was still notified');
 });
 
+module('Ember.computed - readOnly');
+
+test('is chainable', function() {
+  var computed = Ember.computed(function() {}).readOnly();
+
+  ok(computed instanceof Ember.Descriptor);
+  ok(computed instanceof Ember.ComputedProperty);
+});
+
+testBoth('protects against setting', function(get, set) {
+  var obj = {  };
+
+  Ember.defineProperty(obj, 'bar', Ember.computed(function(key) {
+    return 'barValue';
+  }).readOnly());
+
+  equal(get(obj, 'bar'), 'barValue');
+
+  raises(function() {
+    set(obj, 'bar', 'newBar');
+  }, /Cannot Set: bar on:/ );
+
+  equal(get(obj, 'bar'), 'barValue');
+});
+
 module('CP macros');
 
 testBoth('Ember.computed.not', function(get, set) {
@@ -705,7 +730,7 @@ testBoth('Ember.computed.empty', function(get, set) {
 });
 
 testBoth('Ember.computed.bool', function(get, set) {
-  var obj = {foo: function(){}, bar: 'asdf', baz: null, quz: false};
+  var obj = {foo: function() {}, bar: 'asdf', baz: null, quz: false};
   Ember.defineProperty(obj, 'fooBool', Ember.computed.bool('foo'));
   Ember.defineProperty(obj, 'barBool', Ember.computed.bool('bar'));
   Ember.defineProperty(obj, 'bazBool', Ember.computed.bool('baz'));
@@ -718,7 +743,7 @@ testBoth('Ember.computed.bool', function(get, set) {
 
 testBoth('Ember.computed.alias', function(get, set) {
   var obj = { bar: 'asdf', baz: null, quz: false};
-  Ember.defineProperty(obj, 'bay', Ember.computed(function(key){
+  Ember.defineProperty(obj, 'bay', Ember.computed(function(key) {
     return 'apple';
   }));
 
@@ -743,4 +768,196 @@ testBoth('Ember.computed.alias', function(get, set) {
   equal(get(obj, 'bar'), 'newBar');
   equal(get(obj, 'baz'), 'newBaz');
   equal(get(obj, 'quz'), null);
+});
+
+testBoth('Ember.computed.defaultTo', function(get, set) {
+  var obj = { source: 'original source value' };
+  Ember.defineProperty(obj, 'copy', Ember.computed.defaultTo('source'));
+
+  equal(get(obj, 'copy'), 'original source value');
+
+  set(obj, 'copy', 'new copy value');
+  equal(get(obj, 'source'), 'original source value');
+  equal(get(obj, 'copy'), 'new copy value');
+
+  set(obj, 'source', 'new source value');
+  equal(get(obj, 'copy'), 'new copy value');
+
+  set(obj, 'copy', null);
+  equal(get(obj, 'copy'), 'new source value');
+});
+
+testBoth('Ember.computed.match', function(get, set) {
+  var obj = { name: 'Paul' };
+  Ember.defineProperty(obj, 'isPaul', Ember.computed.match('name', /Paul/));
+
+  equal(get(obj, 'isPaul'), true, 'is Paul');
+
+  set(obj, 'name', 'Pierre');
+
+  equal(get(obj, 'isPaul'), false, 'is not Paul anymore');
+});
+
+testBoth('Ember.computed.notEmpty', function(get, set) {
+  var obj = { items: [1] };
+  Ember.defineProperty(obj, 'hasItems', Ember.computed.notEmpty('items'));
+
+  equal(get(obj, 'hasItems'), true, 'is not empty');
+
+  set(obj, 'items', []);
+
+  equal(get(obj, 'hasItems'), false, 'is empty');
+});
+
+testBoth('Ember.computed.equal', function(get, set) {
+  var obj = { name: 'Paul' };
+  Ember.defineProperty(obj, 'isPaul', Ember.computed.equal('name', 'Paul'));
+
+  equal(get(obj, 'isPaul'), true, 'is Paul');
+
+  set(obj, 'name', 'Pierre');
+
+  equal(get(obj, 'isPaul'), false, 'is not Paul anymore');
+});
+
+testBoth('Ember.computed.gt', function(get, set) {
+  var obj = { number: 2 };
+  Ember.defineProperty(obj, 'isGreaterThenOne', Ember.computed.gt('number', 1));
+
+  equal(get(obj, 'isGreaterThenOne'), true, 'is gt');
+
+  set(obj, 'number', 1);
+
+  equal(get(obj, 'isGreaterThenOne'), false, 'is not gt');
+
+  set(obj, 'number', 0);
+
+  equal(get(obj, 'isGreaterThenOne'), false, 'is not gt');
+});
+
+testBoth('Ember.computed.gte', function(get, set) {
+  var obj = { number: 2 };
+  Ember.defineProperty(obj, 'isGreaterOrEqualThenOne', Ember.computed.gte('number', 1));
+
+  equal(get(obj, 'isGreaterOrEqualThenOne'), true, 'is gte');
+
+  set(obj, 'number', 1);
+
+  equal(get(obj, 'isGreaterOrEqualThenOne'), true, 'is gte');
+
+  set(obj, 'number', 0);
+
+  equal(get(obj, 'isGreaterOrEqualThenOne'), false, 'is not gte');
+});
+
+testBoth('Ember.computed.lt', function(get, set) {
+  var obj = { number: 0 };
+  Ember.defineProperty(obj, 'isLesserThenOne', Ember.computed.lt('number', 1));
+
+  equal(get(obj, 'isLesserThenOne'), true, 'is lt');
+
+  set(obj, 'number', 1);
+
+  equal(get(obj, 'isLesserThenOne'), false, 'is not lt');
+
+  set(obj, 'number', 2);
+
+  equal(get(obj, 'isLesserThenOne'), false, 'is not lt');
+});
+
+testBoth('Ember.computed.lte', function(get, set) {
+  var obj = { number: 0 };
+  Ember.defineProperty(obj, 'isLesserOrEqualThenOne', Ember.computed.lte('number', 1));
+
+  equal(get(obj, 'isLesserOrEqualThenOne'), true, 'is lte');
+
+  set(obj, 'number', 1);
+
+  equal(get(obj, 'isLesserOrEqualThenOne'), true, 'is lte');
+
+  set(obj, 'number', 2);
+
+  equal(get(obj, 'isLesserOrEqualThenOne'), false, 'is not lte');
+});
+
+testBoth('Ember.computed.and', function(get, set) {
+  var obj = { one: true, two: true };
+  Ember.defineProperty(obj, 'oneAndTwo', Ember.computed.and('one', 'two'));
+
+  equal(get(obj, 'oneAndTwo'), true, 'one and two');
+
+  set(obj, 'one', false);
+
+  equal(get(obj, 'oneAndTwo'), false, 'one and not two');
+});
+
+testBoth('Ember.computed.or', function(get, set) {
+  var obj = { one: true, two: true };
+  Ember.defineProperty(obj, 'oneOrTwo', Ember.computed.or('one', 'two'));
+
+  equal(get(obj, 'oneOrTwo'), true, 'one or two');
+
+  set(obj, 'one', false);
+
+  equal(get(obj, 'oneOrTwo'), true, 'one or two');
+
+  set(obj, 'two', false);
+
+  equal(get(obj, 'oneOrTwo'), false, 'nore one nore two');
+
+  set(obj, 'one', true);
+
+  equal(get(obj, 'oneOrTwo'), true, 'one or two');
+});
+
+testBoth('Ember.computed.any', function(get, set) {
+  var obj = { one: 'foo', two: 'bar' };
+  Ember.defineProperty(obj, 'anyOf', Ember.computed.any('one', 'two'));
+
+  equal(get(obj, 'anyOf'), 'foo', 'is foo');
+
+  set(obj, 'one', false);
+
+  equal(get(obj, 'anyOf'), 'bar', 'is bar');
+});
+
+testBoth('Ember.computed.map', function(get, set) {
+  var obj = { one: 'foo', two: 'bar', three: null };
+  Ember.defineProperty(obj, 'all', Ember.computed.map('one', 'two', 'three', 'four'));
+
+  deepEqual(get(obj, 'all'), ['foo', 'bar', null, null], 'have all of them');
+
+  set(obj, 'four', true);
+
+  deepEqual(get(obj, 'all'), ['foo', 'bar', null, true], 'have all of them');
+
+  var a = [];
+  set(obj, 'one', 0);
+  set(obj, 'three', a);
+
+  deepEqual(get(obj, 'all'), [0, 'bar', a, true], 'have all of them');
+});
+
+testBoth('Ember.computed.oneWay', function(get, set) {
+  var obj = {
+    firstName: 'Teddy',
+    lastName: 'Zeenny'
+  };
+
+  Ember.defineProperty(obj, 'nickName', Ember.computed.oneWay('firstName'));
+
+  equal(get(obj, 'firstName'), 'Teddy');
+  equal(get(obj, 'lastName'), 'Zeenny');
+  equal(get(obj, 'nickName'), 'Teddy');
+
+  set(obj, 'nickName', 'TeddyBear');
+
+  equal(get(obj, 'firstName'), 'Teddy');
+  equal(get(obj, 'lastName'), 'Zeenny');
+
+  equal(get(obj, 'nickName'), 'TeddyBear');
+
+  set(obj, 'firstName', 'TEDDDDDDDDYYY');
+
+  equal(get(obj, 'nickName'), 'TeddyBear');
 });

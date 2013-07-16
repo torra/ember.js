@@ -1,6 +1,6 @@
 /**
 @module ember
-@submodule ember-application
+@submodule ember-old-router
 */
 
 var get = Ember.get, set = Ember.set;
@@ -189,8 +189,7 @@ var get = Ember.get, set = Ember.set;
   @namespace Ember
   @extends Ember.Namespace
 */
-Ember.Application = Ember.Namespace.extend(
-/** @scope Ember.Application.prototype */{
+Ember.Application = Ember.Namespace.extend(/** @scope Ember.Application.prototype */{
 
   /**
     The root DOM element of the Application. This can be specified as an
@@ -254,7 +253,7 @@ Ember.Application = Ember.Namespace.extend(
 
   /**
     Should the application initialize itself after it's created. You can
-    set this to `false` if you'd like to choose when to initialize your 
+    set this to `false` if you'd like to choose when to initialize your
     application. This defaults to `!Ember.testing`
 
     @property autoinit
@@ -524,7 +523,7 @@ Ember.Application.registerInjection({
     var name = property.charAt(0).toLowerCase() + property.substr(1),
         controllerClass = app[property], controller;
 
-    if(!Ember.Object.detect(controllerClass)){ return; }
+    if (!Ember.Object.detect(controllerClass)) { return; }
     controller = app[property].create();
 
     router.set(name, controller);
@@ -538,4 +537,3 @@ Ember.Application.registerInjection({
 });
 
 Ember.runLoadHooks('Ember.Application', Ember.Application);
-

@@ -101,7 +101,7 @@ define("route-recognizer",
           results.push(new StarSegment(match[1]));
           names.push(match[1]);
           types.stars++;
-        } else if(segment === "") {
+        } else if (segment === "") {
           results.push(new EpsilonSegment());
         } else {
           results.push(new StaticSegment(segment));
@@ -373,14 +373,14 @@ define("route-recognizer",
       },
 
       recognize: function(path) {
-        var states = [ this.rootState ], i, l;
+        var states = [ this.rootState ],
+            pathLen, i, l;
 
         // DEBUG GROUP path
 
-        var pathLen = path.length;
-
         if (path.charAt(0) !== "/") { path = "/" + path; }
 
+        pathLen = path.length;
         if (pathLen > 1 && path.charAt(pathLen - 1) === "/") {
           path = path.substr(0, pathLen - 1);
         }

@@ -1,6 +1,6 @@
 /**
 @module ember
-@submodule ember-handlebars
+@submodule ember-handlebars-compiler
 */
 
 // Eliminate dependency on any Ember to simplify precompilation workflow
@@ -10,8 +10,13 @@ var objectCreate = Object.create || function(parent) {
   return new F();
 };
 
-var Handlebars = this.Handlebars || Ember.imports.Handlebars;
-Ember.assert("Ember Handlebars requires Handlebars 1.0.0-rc.3 or greater", Handlebars && Handlebars.VERSION.match(/^1\.0\.[0-9](\.rc\.[23456789]+)?/));
+var Handlebars = this.Handlebars || (Ember.imports && Ember.imports.Handlebars);
+if (!Handlebars && typeof require === 'function') {
+  Handlebars = require('handlebars');
+}
+
+Ember.assert("Ember Handlebars requires Handlebars version 1.0.0. Include a SCRIPT tag in the HTML HEAD linking to the Handlebars file before you link to Ember.", Handlebars);
+Ember.assert("Ember Handlebars requires Handlebars version 1.0.0, COMPILER_REVISION expected: 4, got: " +  Handlebars.COMPILER_REVISION + " - Please note: Builds of master may have other COMPILER_REVISION values.", Handlebars.COMPILER_REVISION === 4);
 
 /**
   Prepares the Handlebars templating library for use inside Ember's view
@@ -28,6 +33,96 @@ Ember.assert("Ember Handlebars requires Handlebars 1.0.0-rc.3 or greater", Handl
   @namespace Ember
 */
 Ember.Handlebars = objectCreate(Handlebars);
+
+function makeBindings(options) {
+  var hash = options.hash,
+      hashType = options.hashTypes;
+
+  for (var prop in hash) {
+    if (hashType[prop] === 'ID') {
+      hash[prop + 'Binding'] = hash[prop];
+      hashType[prop + 'Binding'] = 'STRING';
+      delete hash[prop];
+      delete hashType[prop];
+    }
+  }
+}
+
+/**
+  Register a bound helper or custom view helper.
+
+  ## Simple bound helper example
+
+  ```javascript
+  Ember.Handlebars.helper('capitalize', function(value) {
+    return value.toUpperCase();
+  });
+  ```
+
+  The above bound helper can be used inside of templates as follows:
+
+  ```handlebars
+  {{capitalize name}}
+  ```
+
+  In this case, when the `name` property of the template's context changes,
+  the rendered value of the helper will update to reflect this change.
+
+  For more examples of bound helpers, see documentation for
+  `Ember.Handlebars.registerBoundHelper`.
+
+  ## Custom view helper example
+
+  Assuming a view subclass named `App.CalenderView` were defined, a helper
+  for rendering instances of this view could be registered as follows:
+
+  ```javascript
+  Ember.Handlebars.helper('calendar', App.CalendarView):
+  ```
+
+  The above bound helper can be used inside of templates as follows:
+
+  ```handlebars
+  {{calendar}}
+  ```
+
+  Which is functionally equivalent to:
+
+  ```handlebars
+  {{view App.CalendarView}}
+  ```
+
+  Options in the helper will be passed to the view in exactly the same
+  manner as with the `view` helper.
+
+  @method helper
+  @for Ember.Handlebars
+  @param {String} name
+  @param {Function|Ember.View} function or view class constructor
+  @param {String} dependentKeys*
+*/
+Ember.Handlebars.helper = function(name, value) {
+  if (Ember.Component.detect(value)) {
+    Ember.assert("You tried to register a component named '" + name + "', but component names must include a '-'", name.match(/-/));
+
+    var proto = value.proto();
+    if (!proto.layoutName && !proto.templateName) {
+      value.reopen({
+        layoutName: 'components/' + name
+      });
+    }
+  }
+
+  if (Ember.View.detect(value)) {
+    Ember.Handlebars.registerHelper(name, function(options) {
+      Ember.assert("You can only pass attributes as parameters (not values) to a application-defined helper", arguments.length < 2);
+      makeBindings(options);
+      return Ember.Handlebars.helpers.view.call(this, value, options);
+    });
+  } else {
+    Ember.Handlebars.registerBoundHelper.apply(null, arguments);
+  }
+};
 
 /**
 @class helpers
@@ -108,12 +203,12 @@ Ember.Handlebars.Compiler.prototype.mustache = function(mustache) {
   } else if (mustache.params.length || mustache.hash) {
     // no changes required
   } else {
-    var id = new Handlebars.AST.IdNode(['_triageMustache']);
+    var id = new Handlebars.AST.IdNode([{ part: '_triageMustache' }]);
 
     // Update the mustache node to include a hash value indicating whether the original node
     // was escaped. This will allow us to properly escape values when the underlying value
     // changes and we need to re-render the value.
-    if(!mustache.escaped) {
+    if (!mustache.escaped) {
       mustache.hash = mustache.hash || new Handlebars.AST.HashNode([]);
       mustache.hash.pairs.push(["unescaped", new Handlebars.AST.StringNode("true")]);
     }

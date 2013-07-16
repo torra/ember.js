@@ -6,14 +6,13 @@ require('ember-runtime/system/namespace');
 */
 
 
-// NOTE: this object should never be included directly. Instead use Ember.
-// Ember.Object. We only define this separately so that Ember.Set can depend on it
+// NOTE: this object should never be included directly. Instead use `Ember.Object`.
+// We only define this separately so that `Ember.Set` can depend on it.
 
 
 var set = Ember.set, get = Ember.get,
     o_create = Ember.create,
     o_defineProperty = Ember.platform.defineProperty,
-    a_slice = Array.prototype.slice,
     GUID_KEY = Ember.GUID_KEY,
     guidFor = Ember.guidFor,
     generateGuid = Ember.generateGuid,
@@ -67,6 +66,9 @@ function makeCtor() {
 
       for (var i = 0, l = props.length; i < l; i++) {
         var properties = props[i];
+
+        Ember.assert("Ember.Object.create no longer supports mixing in other definitions, use createWithMixins instead.", !(properties instanceof Ember.Mixin));
+
         for (var keyName in properties) {
           if (!properties.hasOwnProperty(keyName)) { continue; }
 
@@ -161,6 +163,35 @@ CoreObject.PrototypeMixin = Mixin.create({
 
   isInstance: true,
 
+  /**
+    An overridable method called when objects are instantiated. By default,
+    does nothing unless it is overridden during class definition.
+
+    Example:
+
+    ```javascript
+    App.Person = Ember.Object.extend({
+      init: function() {
+        this._super();
+        alert('Name is ' + this.get('name'));
+      }
+    });
+
+    var steve = App.Person.create({
+      name: "Steve"
+    });
+
+    // alerts 'Name is Steve'.
+    ```
+
+    NOTE: If you do override `init` for a framework class like `Ember.View` or
+    `Ember.ArrayController`, be sure to call `this._super()` in your
+    `init` declaration! If you don't, Ember may not have an opportunity to
+    do important setup work, and you'll see strange behavior in your
+    application.
+
+    @method init
+  */
   init: function() {},
 
   /**
@@ -205,14 +236,14 @@ CoreObject.PrototypeMixin = Mixin.create({
     view.get('classNames'); // ['ember-view', 'bar', 'foo', 'baz']
     ```
     Adding a single property that is not an array will just add it in the array:
-    
+
     ```javascript
     var view = App.FooBarView.create({
       classNames: 'baz'
     })
     view.get('classNames'); // ['ember-view', 'bar', 'foo', 'baz']
     ```
-    
+
     Using the `concatenatedProperties` property, we can tell to Ember that mix
     the content of the properties.
 
@@ -229,12 +260,22 @@ CoreObject.PrototypeMixin = Mixin.create({
   concatenatedProperties: null,
 
   /**
+    Destroyed object property flag.
+
+    if this property is `true` the observers and bindings were already
+    removed by the effect of calling the `destroy()` method.
+
     @property isDestroyed
     @default false
   */
   isDestroyed: false,
 
   /**
+    Destruction scheduled flag. The `destroy()` method has been called.
+
+    The object stays intact until the end of the run loop at which point
+    the `isDestroyed` flag is set.
+
     @property isDestroying
     @default false
   */
@@ -248,22 +289,24 @@ CoreObject.PrototypeMixin = Mixin.create({
     raised.
 
     Note that destruction is scheduled for the end of the run loop and does not
-    happen immediately.
+    happen immediately.  It will set an isDestroying flag immediately.
 
     @method destroy
     @return {Ember.Object} receiver
   */
   destroy: function() {
-    if (this._didCallDestroy) { return; }
-
+    if (this.isDestroying) { return; }
     this.isDestroying = true;
-    this._didCallDestroy = true;
 
-    if (this.willDestroy) { this.willDestroy(); }
-
+    schedule('actions', this, this.willDestroy);
     schedule('destroy', this, this._scheduledDestroy);
     return this;
   },
+
+  /**
+    Override to implement teardown.
+   */
+  willDestroy: Ember.K,
 
   /**
     @private
@@ -274,10 +317,9 @@ CoreObject.PrototypeMixin = Mixin.create({
     @method _scheduledDestroy
   */
   _scheduledDestroy: function() {
+    if (this.isDestroyed) { return; }
     destroy(this);
-    set(this, 'isDestroyed', true);
-
-    if (this.didDestroy) { this.didDestroy(); }
+    this.isDestroyed = true;
   },
 
   bind: function(to, from) {
@@ -306,12 +348,12 @@ CoreObject.PrototypeMixin = Mixin.create({
     included in the output.
 
         App.Teacher = App.Person.extend({
-          toStringExtension: function(){
+          toStringExtension: function() {
             return this.get('fullName');
           }
         });
         teacher = App.Teacher.create()
-        teacher.toString(); // #=> "<App.Teacher:ember1026:Tom Dale>"
+        teacher.toString(); //=> "<App.Teacher:ember1026:Tom Dale>"
 
     @method toString
     @return {String} string representation

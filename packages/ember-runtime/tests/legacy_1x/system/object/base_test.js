@@ -26,14 +26,6 @@ var obj, obj1, don, don1 ; // global variables
 
 var get = Ember.get, set = Ember.set;
 
-function inArray(item, array) {
-  var len = array.length, idx;
-  for (idx=0; idx<len; idx++) {
-    if (array[idx] === item) { return idx; }
-  }
-  return -1;
-}
-
 module("A new Ember.Object instance", {
 
   setup: function() {
@@ -84,7 +76,7 @@ module("Ember.Object observers", {
       prop1: null,
 
       // normal observer
-      observer: Ember.observer(function(){
+      observer: Ember.observer(function() {
         this._normal = true;
       }, "prop1"),
 
@@ -142,7 +134,7 @@ module("Ember.Object superclass and subclasses", {
   }
 });
 
-test("Checking the detect() function on an object and its subclass", function(){
+test("Checking the detect() function on an object and its subclass", function() {
 	equal(obj.detect(obj1), true);
 	equal(obj1.detect(obj), false);
 });

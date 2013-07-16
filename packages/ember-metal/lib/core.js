@@ -22,7 +22,7 @@
 
   @class Ember
   @static
-  @version 1.0.0-rc.1
+  @version 1.0.0-rc.6
 */
 
 if ('undefined' === typeof Ember) {
@@ -49,10 +49,10 @@ Ember.toString = function() { return "Ember"; };
 /**
   @property VERSION
   @type String
-  @default '1.0.0-rc.1'
+  @default '1.0.0-rc.6'
   @final
 */
-Ember.VERSION = '1.0.0-rc.1';
+Ember.VERSION = '1.0.0-rc.6';
 
 /**
   Standard environmental variables. You can define these in a global `ENV`
@@ -152,17 +152,33 @@ Ember.uuid = 0;
 //
 
 function consoleMethod(name) {
-  if (imports.console && imports.console[name]) {
+  var console = imports.console,
+      method = typeof console === 'object' ? console[name] : null;
+
+  if (method) {
     // Older IE doesn't support apply, but Chrome needs it
-    if (imports.console[name].apply) {
+    if (method.apply) {
       return function() {
-        imports.console[name].apply(imports.console, arguments);
+        method.apply(console, arguments);
       };
     } else {
       return function() {
         var message = Array.prototype.join.call(arguments, ', ');
-        imports.console[name](message);
+        method(message);
       };
+    }
+  }
+}
+
+function assertPolyfill(test, message) {
+  if (!test) {
+    try {
+      // attempt to preserve the stack
+      throw new Error("assertion failed: " + message);
+    } catch(error) {
+      setTimeout(function() {
+        throw error;
+      }, 0);
     }
   }
 }
@@ -179,7 +195,8 @@ Ember.Logger = {
   warn:  consoleMethod('warn')  || Ember.K,
   error: consoleMethod('error') || Ember.K,
   info:  consoleMethod('info')  || Ember.K,
-  debug: consoleMethod('debug') || consoleMethod('info') || Ember.K
+  debug: consoleMethod('debug') || consoleMethod('info') || Ember.K,
+  assert: consoleMethod('assert') || assertPolyfill
 };
 
 
@@ -201,7 +218,7 @@ Ember.onerror = null;
 /**
   @private
 
-  Wrap code block in a try/catch if {{#crossLink "Ember/onerror"}}{{/crossLink}} is set.
+  Wrap code block in a try/catch if `Ember.onerror` is set.
 
   @method handleErrors
   @for Ember
@@ -213,12 +230,12 @@ Ember.handleErrors = function(func, context) {
   // so in the event that we don't have an `onerror` handler we don't wrap in a try/catch
   if ('function' === typeof Ember.onerror) {
     try {
-      return func.apply(context || this);
+      return func.call(context || this);
     } catch (error) {
       Ember.onerror(error);
     }
   } else {
-    return func.apply(context || this);
+    return func.call(context || this);
   }
 };
 
@@ -227,4 +244,57 @@ Ember.merge = function(original, updates) {
     if (!updates.hasOwnProperty(prop)) { continue; }
     original[prop] = updates[prop];
   }
+  return original;
 };
+
+/**
+  Returns true if the passed value is null or undefined. This avoids errors
+  from JSLint complaining about use of ==, which can be technically
+  confusing.
+
+  ```javascript
+  Ember.isNone();              // true
+  Ember.isNone(null);          // true
+  Ember.isNone(undefined);     // true
+  Ember.isNone('');            // false
+  Ember.isNone([]);            // false
+  Ember.isNone(function() {});  // false
+  ```
+
+  @method isNone
+  @for Ember
+  @param {Object} obj Value to test
+  @return {Boolean}
+*/
+Ember.isNone = function(obj) {
+  return obj === null || obj === undefined;
+};
+Ember.none = Ember.deprecateFunc("Ember.none is deprecated. Please use Ember.isNone instead.", Ember.isNone);
+
+/**
+  Verifies that a value is `null` or an empty string, empty array,
+  or empty function.
+
+  Constrains the rules on `Ember.isNone` by returning false for empty
+  string and empty arrays.
+
+  ```javascript
+  Ember.isEmpty();                // true
+  Ember.isEmpty(null);            // true
+  Ember.isEmpty(undefined);       // true
+  Ember.isEmpty('');              // true
+  Ember.isEmpty([]);              // true
+  Ember.isEmpty('Adam Hawkins');  // false
+  Ember.isEmpty([0,1,2]);         // false
+  ```
+
+  @method isEmpty
+  @for Ember
+  @param {Object} obj Value to test
+  @return {Boolean}
+*/
+Ember.isEmpty = function(obj) {
+  return Ember.isNone(obj) || (obj.length === 0 && typeof obj !== 'function') || (typeof obj === 'object' && Ember.get(obj, 'length') === 0);
+};
+Ember.empty = Ember.deprecateFunc("Ember.empty is deprecated. Please use Ember.isEmpty instead.", Ember.isEmpty) ;
+

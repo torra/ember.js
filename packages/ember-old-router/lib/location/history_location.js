@@ -116,8 +116,8 @@ Ember.HistoryLocation = Ember.Object.extend({
   onUpdateURL: function(callback) {
     var guid = Ember.guidFor(this);
 
-    Ember.$(window).bind('popstate.ember-location-'+guid, function(e) {
-      if(!popstateReady) {
+    Ember.$(window).on('popstate.ember-location-'+guid, function(e) {
+      if (!popstateReady) {
         return;
       }
       callback(location.pathname);
@@ -145,7 +145,7 @@ Ember.HistoryLocation = Ember.Object.extend({
   willDestroy: function() {
     var guid = Ember.guidFor(this);
 
-    Ember.$(window).unbind('popstate.ember-location-'+guid);
+    Ember.$(window).off('popstate.ember-location-'+guid);
   }
 });
 

@@ -18,6 +18,9 @@ module("Ember.View.create", {
 
 test("registers view in the global views hash using layerId for event targeted", function() {
   view = Ember.View.create();
+  Ember.run(function() {
+    view.appendTo('#qunit-fixture');
+  });
   equal(Ember.View.views[get(view, 'elementId')], view, 'registers view');
 });
 
@@ -32,33 +35,26 @@ test("registers itself with a controller if the viewController property is set",
   equal(lookup.TestApp.fooController.get('view'), view, "sets the view property of the controller");
 });
 
-module("Ember.View.createWithMixins", {
-  teardown: function() {
-    Ember.run(function() {
-      // View gets registered but instance isn't returned
-      Ember.View.views['test'].destroy();
-    });
-  }
-});
+module("Ember.View.createWithMixins");
 
 test("should warn if a non-array is used for classNames", function() {
-  raises(function() {
+  expectAssertion(function() {
     Ember.View.createWithMixins({
       elementId: 'test',
       classNames: Ember.computed(function() {
         return ['className'];
       }).volatile()
     });
-  }, /Only arrays are allowed/i, 'should warn that an array was not used');
+  }, /Only arrays are allowed/i);
 });
 
 test("should warn if a non-array is used for classNamesBindings", function() {
-  raises(function() {
+  expectAssertion(function() {
     Ember.View.createWithMixins({
       elementId: 'test',
       classNameBindings: Ember.computed(function() {
         return ['className'];
       }).volatile()
     });
-  }, /Only arrays are allowed/i, 'should warn that an array was not used');
+  }, /Only arrays are allowed/i);
 });

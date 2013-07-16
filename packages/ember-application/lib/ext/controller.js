@@ -1,6 +1,6 @@
 /**
 @module ember
-@submodule ember-routing
+@submodule ember-application
 */
 
 var get = Ember.get, set = Ember.set;
@@ -44,13 +44,40 @@ function verifyDependencies(controller) {
 
 Ember.ControllerMixin.reopen({
   concatenatedProperties: ['needs'],
+
+  /**
+    An array of other controller objects available inside
+    instances of this controller via the `controllers`
+    property:
+
+    For example, when you define a controller:
+
+    ```javascript
+    App.CommentsController = Ember.ArrayController.extend({
+      needs: ['post']
+    });
+    ```
+    
+    The application's single instance of these other
+    controllers are accessible by name through the
+    `controllers` property:
+    
+    ```javascript
+    this.get('controllers.post'); // instance of App.PostController
+    ```
+
+    This is only available for singleton controllers.
+
+    @property {Array} needs
+    @default []
+  */
   needs: [],
 
   init: function() {
     this._super.apply(this, arguments);
 
     // Structure asserts to still do verification but not string concat in production
-    if(!verifyDependencies(this)) {
+    if (!verifyDependencies(this)) {
       Ember.assert("Missing dependencies", false);
     }
   },

@@ -13,8 +13,6 @@ var get = Ember.get, set = Ember.set;
 */
 Ember.State = Ember.Object.extend(Ember.Evented,
 /** @scope Ember.State.prototype */{
-  isState: true,
-
   /**
     A reference to the parent state.
 
@@ -66,7 +64,7 @@ Ember.State = Ember.Object.extend(Ember.Evented,
   },
 
   init: function() {
-    var states = get(this, 'states'), foundStates;
+    var states = get(this, 'states');
     set(this, 'childStates', Ember.A());
     set(this, 'eventTransitions', get(this, 'eventTransitions') || {});
 
@@ -100,26 +98,48 @@ Ember.State = Ember.Object.extend(Ember.Evented,
       }
     }
 
-    set(this, 'pathsCache', {});
-    set(this, 'pathsCacheNoContext', {});
+    // pathsCaches is a nested hash of the form:
+    //   pathsCaches[stateManagerTypeGuid][path] == transitions_hash
+    set(this, 'pathsCaches', {});
+  },
+
+  setPathsCache: function(stateManager, path, transitions) {
+    var stateManagerTypeGuid = Ember.guidFor(stateManager.constructor),
+      pathsCaches = get(this, 'pathsCaches'),
+      pathsCacheForManager = pathsCaches[stateManagerTypeGuid] || {};
+
+    pathsCacheForManager[path] = transitions;
+    pathsCaches[stateManagerTypeGuid] = pathsCacheForManager;
+  },
+
+  getPathsCache: function(stateManager, path) {
+    var stateManagerTypeGuid = Ember.guidFor(stateManager.constructor),
+      pathsCaches = get(this, 'pathsCaches'),
+      pathsCacheForManager = pathsCaches[stateManagerTypeGuid] || {};
+
+    return pathsCacheForManager[path];
   },
 
   setupChild: function(states, name, value) {
     if (!value) { return false; }
+    var instance;
 
-    if (value.isState) {
+    if (value instanceof Ember.State) {
       set(value, 'name', name);
+      instance = value;
+      instance.container = this.container;
     } else if (Ember.State.detect(value)) {
-      value = value.create({
-        name: name
+      instance = value.create({
+        name: name,
+        container: this.container
       });
     }
 
-    if (value.isState) {
-      set(value, 'parentState', this);
-      get(this, 'childStates').pushObject(value);
-      states[name] = value;
-      return value;
+    if (instance instanceof Ember.State) {
+      set(instance, 'parentState', this);
+      get(this, 'childStates').pushObject(instance);
+      states[name] = instance;
+      return instance;
     }
   },
 
@@ -200,7 +220,7 @@ Ember.State.reopenClass({
 
     bManager = Ember.StateManager.create({
       stateOne: Ember.State.create({
-        changeToStateTwo: function(manager, context){
+        changeToStateTwo: function(manager, context) {
           manager.transitionTo('stateTwo', context)
         }
       }),
@@ -216,7 +236,7 @@ Ember.State.reopenClass({
   transitionTo: function(target) {
 
     var transitionFunction = function(stateManager, contextOrEvent) {
-      var contexts = [], transitionArgs,
+      var contexts = [],
           Event = Ember.$ && Ember.$.Event;
 
       if (contextOrEvent && (Event && contextOrEvent instanceof Event)) {

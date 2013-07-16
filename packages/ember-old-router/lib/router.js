@@ -10,15 +10,6 @@ require('ember-metal/utils'); // Ember.tryFinally
 
 var get = Ember.get, set = Ember.set;
 
-var merge = function(original, hash) {
-  for (var prop in hash) {
-    if (!hash.hasOwnProperty(prop)) { continue; }
-    if (original.hasOwnProperty(prop)) { continue; }
-
-    original[prop] = hash[prop];
-  }
-};
-
 /**
   `Ember.Router` is the subclass of `Ember.StateManager` responsible for
   providing URL-based application state detection. The `Ember.Router` instance
@@ -219,7 +210,7 @@ var merge = function(original, hash) {
   first argument and a hash of the URL's dynamic segments and values as its
   second argument.
 
-  The following route structure when loaded with the URL 
+  The following route structure when loaded with the URL
   "#/fixed/thefirstvalue/anotherFixed/thesecondvalue":
 
   ```javascript
@@ -287,8 +278,8 @@ var merge = function(original, hash) {
   App.initialize();
   ```
 
-  Transitioning to `root.bRoute` with a context of 
-  `Object.create({name: 'Yehuda'})` will call the `Route`'s `serialize` 
+  Transitioning to `root.bRoute` with a context of
+  `Object.create({name: 'Yehuda'})` will call the `Route`'s `serialize`
   method with the context as its second argument and update the URL to
   '#/staticSection/Yehuda'.
 
@@ -492,8 +483,7 @@ var merge = function(original, hash) {
   @namespace Ember
   @extends Ember.StateManager
 */
-Ember.Router = Ember.StateManager.extend(
-/** @scope Ember.Router.prototype */ {
+Ember.Router = Ember.StateManager.extend(/** @scope Ember.Router.prototype */ {
 
   /**
     @property initialState

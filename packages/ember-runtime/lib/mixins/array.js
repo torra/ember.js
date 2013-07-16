@@ -9,9 +9,7 @@ require('ember-runtime/mixins/enumerable');
 // HELPERS
 //
 
-var get = Ember.get, set = Ember.set, meta = Ember.meta, map = Ember.EnumerableUtils.map, cacheFor = Ember.cacheFor;
-
-function none(obj) { return obj===null || obj===undefined; }
+var get = Ember.get, set = Ember.set, isNone = Ember.isNone, map = Ember.EnumerableUtils.map, cacheFor = Ember.cacheFor;
 
 // ..........................................................
 // ARRAY
@@ -34,7 +32,7 @@ function none(obj) { return obj===null || obj===undefined; }
 
   You can use the methods defined in this module to access and modify array
   contents in a KVO-friendly way. You can also be notified whenever the
-  membership if an array changes by changing the syntax of the property to
+  membership of an array changes by changing the syntax of the property to
   `.observes('*myProperty.[]')`.
 
   To support `Ember.Array` in your own class, you must override two
@@ -50,9 +48,6 @@ function none(obj) { return obj===null || obj===undefined; }
   @since Ember 0.9.0
 */
 Ember.Array = Ember.Mixin.create(Ember.Enumerable, /** @scope Ember.Array.prototype */ {
-
-  // compatibility
-  isSCArray: true,
 
   /**
     Your array must support the `length` property. Your replace methods should
@@ -82,6 +77,7 @@ Ember.Array = Ember.Mixin.create(Ember.Enumerable, /** @scope Ember.Array.protot
 
     @method objectAt
     @param {Number} idx The index of the item to return.
+    @return {*} item at index or undefined
   */
   objectAt: function(idx) {
     if ((idx < 0) || (idx>=get(this, 'length'))) return undefined ;
@@ -99,10 +95,11 @@ Ember.Array = Ember.Mixin.create(Ember.Enumerable, /** @scope Ember.Array.protot
 
     @method objectsAt
     @param {Array} indexes An array of indexes of items to return.
+    @return {Array}
    */
   objectsAt: function(indexes) {
     var self = this;
-    return map(indexes, function(idx){ return self.objectAt(idx); });
+    return map(indexes, function(idx) { return self.objectAt(idx); });
   },
 
   // overrides Ember.Enumerable version
@@ -118,6 +115,7 @@ Ember.Array = Ember.Mixin.create(Ember.Enumerable, /** @scope Ember.Array.protot
     This property overrides the default property defined in `Ember.Enumerable`.
 
     @property []
+    @return this
   */
   '[]': Ember.computed(function(key, value) {
     if (value !== undefined) this.replace(0, get(this, 'length'), value) ;
@@ -133,7 +131,7 @@ Ember.Array = Ember.Mixin.create(Ember.Enumerable, /** @scope Ember.Array.protot
   }),
 
   // optimized version from Enumerable
-  contains: function(obj){
+  contains: function(obj) {
     return this.indexOf(obj) >= 0;
   },
 
@@ -151,15 +149,19 @@ Ember.Array = Ember.Mixin.create(Ember.Enumerable, /** @scope Ember.Array.protot
     ```
 
     @method slice
-    @param beginIndex {Integer} (Optional) index to begin slicing from.
-    @param endIndex {Integer} (Optional) index to end the slice at.
+    @param {Integer} beginIndex (Optional) index to begin slicing from.
+    @param {Integer} endIndex (Optional) index to end the slice at.
     @return {Array} New array with specified slice
   */
   slice: function(beginIndex, endIndex) {
-    var ret = [];
+    var ret = Ember.A();
     var length = get(this, 'length') ;
-    if (none(beginIndex)) beginIndex = 0 ;
-    if (none(endIndex) || (endIndex > length)) endIndex = length ;
+    if (isNone(beginIndex)) beginIndex = 0 ;
+    if (isNone(endIndex) || (endIndex > length)) endIndex = length ;
+
+    if (beginIndex < 0) beginIndex = length + beginIndex;
+    if (endIndex < 0) endIndex = length + endIndex;
+
     while(beginIndex < endIndex) {
       ret[ret.length] = this.objectAt(beginIndex++) ;
     }
@@ -240,15 +242,15 @@ Ember.Array = Ember.Mixin.create(Ember.Enumerable, /** @scope Ember.Array.protot
     Adds an array observer to the receiving array. The array observer object
     normally must implement two methods:
 
-    * `arrayWillChange(start, removeCount, addCount)` - This method will be
+    * `arrayWillChange(observedObj, start, removeCount, addCount)` - This method will be
       called just before the array is modified.
-    * `arrayDidChange(start, removeCount, addCount)` - This method will be
+    * `arrayDidChange(observedObj, start, removeCount, addCount)` - This method will be
       called just after the array is modified.
 
-    Both callbacks will be passed the starting index of the change as well a
-    a count of the items to be removed and added. You can use these callbacks
-    to optionally inspect the array during the change, clear caches, or do
-    any other bookkeeping necessary.
+    Both callbacks will be passed the observed object, starting index of the
+    change as well a a count of the items to be removed and added. You can use
+    these callbacks to optionally inspect the array during the change, clear
+    caches, or do any other bookkeeping necessary.
 
     In addition to passing a target, you can also include an options hash
     which you can use to override the method names that will be invoked on the
@@ -313,9 +315,9 @@ Ember.Array = Ember.Mixin.create(Ember.Enumerable, /** @scope Ember.Array.protot
 
     @method arrayContentWillChange
     @param {Number} startIdx The starting index in the array that will change.
-    @param {Number} removeAmt The number of items that will be removed. If you 
+    @param {Number} removeAmt The number of items that will be removed. If you
       pass `null` assumes 0
-    @param {Number} addAmt The number of items that will be added  If you 
+    @param {Number} addAmt The number of items that will be added. If you
       pass `null` assumes 0.
     @return {Ember.Array} receiver
   */
@@ -349,6 +351,20 @@ Ember.Array = Ember.Mixin.create(Ember.Enumerable, /** @scope Ember.Array.protot
     return this;
   },
 
+  /**
+    If you are implementing an object that supports `Ember.Array`, call this
+    method just after the array content changes to notify any observers and
+    invalidate any related properties. Pass the starting index of the change
+    as well as a delta of the amounts to change.
+
+    @method arrayContentDidChange
+    @param {Number} startIdx The starting index in the array that did change.
+    @param {Number} removeAmt The number of items that were removed. If you
+      pass `null` assumes 0
+    @param {Number} addAmt The number of items that were added. If you
+      pass `null` assumes 0.
+    @return {Ember.Array} receiver
+  */
   arrayContentDidChange: function(startIdx, removeAmt, addAmt) {
 
     // if no args are passed assume everything changes

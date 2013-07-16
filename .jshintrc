@@ -1,5 +1,6 @@
 {
     "predef": [
+        "QUnit",
         "define",
         "console",
         "Ember",
@@ -25,11 +26,16 @@
         "strictEqual",
         "module",
         "expect",
-        "minispade"
+        "minispade",
+        "expectAssertion",
+
+        // A safe subset of "browser:true":
+        "window", "location", "document", "XMLSerializer",
+        "setTimeout", "clearTimeout", "setInterval", "clearInterval"
     ],
 
     "node" : false,
-    "browser" : true,
+    "browser" : false,
 
     "boss" : true,
     "curly": false,

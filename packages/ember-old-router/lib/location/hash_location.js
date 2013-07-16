@@ -60,7 +60,7 @@ Ember.HashLocation = Ember.Object.extend({
     var self = this;
     var guid = Ember.guidFor(this);
 
-    Ember.$(window).bind('hashchange.ember-location-'+guid, function() {
+    Ember.$(window).on('hashchange.ember-location-'+guid, function() {
       var path = location.hash.substr(1);
       if (get(self, 'lastSetURL') === path) { return; }
 
@@ -89,7 +89,7 @@ Ember.HashLocation = Ember.Object.extend({
   willDestroy: function() {
     var guid = Ember.guidFor(this);
 
-    Ember.$(window).unbind('hashchange.ember-location-'+guid);
+    Ember.$(window).off('hashchange.ember-location-'+guid);
   }
 });
 

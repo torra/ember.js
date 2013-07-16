@@ -3,12 +3,13 @@
 @submodule ember-views
 */
 
-/*** BEGIN METAMORPH HELPERS ***/
+/* BEGIN METAMORPH HELPERS */
 
 // Internet Explorer prior to 9 does not allow setting innerHTML if the first element
 // is a "zero-scope" element. This problem can be worked around by making
 // the first node an invisible text node. We, like Modernizr, use &shy;
-var needsShy = (function(){
+
+var needsShy = this.document && (function() {
   var testEl = document.createElement('div');
   testEl.innerHTML = "<div></div>";
   testEl.firstChild.innerHTML = "<script></script>";
@@ -18,7 +19,7 @@ var needsShy = (function(){
 // IE 8 (and likely earlier) likes to move whitespace preceeding
 // a script tag to appear after it. This means that we can
 // accidentally remove whitespace when updating a morph.
-var movesWhitespace = (function() {
+var movesWhitespace = this.document && (function() {
   var testEl = document.createElement('div');
   testEl.innerHTML = "Test: <script type='text/x-placeholder'></script>Value";
   return testEl.childNodes[0].nodeValue === 'Test:' &&
@@ -75,7 +76,7 @@ var setInnerHTMLWithoutFix = function(element, html) {
   }
 };
 
-/*** END METAMORPH HELPERS */
+/* END METAMORPH HELPERS */
 
 
 var innerHTMLTags = {};
@@ -104,9 +105,11 @@ var setInnerHTML = function(element, html) {
   if (canSetInnerHTML(tagName)) {
     setInnerHTMLWithoutFix(element, html);
   } else {
-    Ember.assert("Can't set innerHTML on "+element.tagName+" in this browser", element.outerHTML);
+    // Firefox versions < 11 do not have support for element.outerHTML.
+    var outerHTML = element.outerHTML || new XMLSerializer().serializeToString(element);
+    Ember.assert("Can't set innerHTML on "+element.tagName+" in this browser", outerHTML);
 
-    var startTag = element.outerHTML.match(new RegExp("<"+tagName+"([^>]*)>", 'i'))[0],
+    var startTag = outerHTML.match(new RegExp("<"+tagName+"([^>]*)>", 'i'))[0],
         endTag = '</'+tagName+'>';
 
     var wrapper = document.createElement('div');

@@ -44,7 +44,12 @@ if (!('MANDATORY_SETTER' in Ember.ENV)) {
     falsy, an exception will be thrown.
 */
 Ember.assert = function(desc, test) {
-  if (!test) throw new Error("assertion failed: "+desc);
+  Ember.Logger.assert(test, desc);
+
+  if (Ember.testing && !test) {
+    // when testing, ensure test failures when assertions fail
+    throw new Error("Assertion Failed: " + desc);
+  }
 };
 
 
@@ -90,12 +95,12 @@ Ember.debug = function(message) {
     will be displayed.
 */
 Ember.deprecate = function(message, test) {
-  if (Ember && Ember.TESTING_DEPRECATION) { return; }
+  if (Ember.TESTING_DEPRECATION) { return; }
 
   if (arguments.length === 1) { test = false; }
   if (test) { return; }
 
-  if (Ember && Ember.ENV.RAISE_ON_DEPRECATION) { throw new Error(message); }
+  if (Ember.ENV.RAISE_ON_DEPRECATION) { throw new Error(message); }
 
   var error;
 
@@ -135,6 +140,7 @@ Ember.deprecate = function(message, test) {
   @method deprecateFunc
   @param {String} message A description of the deprecation.
   @param {Function} func The function to be deprecated.
+  @return {Function} a new function that wrapped the original function with a deprecation warning
 */
 Ember.deprecateFunc = function(message, func) {
   return function() {
